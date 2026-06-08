@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=yes">
+  <title>二十四节气 · 岁时记</title>
+  <style>
+    :root {
+      --spring-primary: #e8a598;
+      --spring-bg: #fdf6f0;
+      --spring-accent: #d4786e;
+      --spring-card: #fff8f5;
+      --spring-border: #f0d5cc;
+      --spring-text: #5d3a34;
+      --summer-primary: #7db892;
+      --summer-bg: #f2f9f4;
+      --summer-accent: #4a8c5c;
+      --summer-card: #f8fcf9;
+      --summer-border: #c8e3cf;
+      --summer-text: #2d4a33;
+      --autumn-primary: #d4a853;
+      --autumn-bg: #fdf8ef;
+      --autumn-accent: #b8861e;
+      --autumn-card: #fdfaf3;
+      --autumn-border: #e8d5a8;
+      --autumn-text: #4a3820;
+      --winter-primary: #8aaccc;
+      --winter-bg: #f4f7fa;
+      --winter-accent: #5c7fa0;
+      --winter-card: #fafcfd;
+      --winter-border: #c5d5e3;
+      --winter-text: #2c3d50;
+      --gold: #c9a96e;
+      --ink: #3c3228;
+      --paper: #fefdf8;
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'PingFang SC','Hiragino Sans GB','Noto Serif SC','Source Han Serif CN','STSong','Songti SC','KaiTi','STKaiti',serif;
+      background: #1a1614;
+      position: fixed;
+      top:0; left:0;
+    }
+    .scroll-container {
+      display: flex;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-snap-type: x mandatory;
+      height: 100vh;
+      width: 100vw;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+      cursor: grab;
+    }
+    .scroll-container:active { cursor: grabbing; }
+    .scroll-container::-webkit-scrollbar { display: none; }
+    .scroll-container.dragging { scroll-snap-type: none; }
+
+    /* 页面 */
+    .page {
+      flex: 0 0 100vw;
+      width: 100vw;
+      height: 100vh;
+      scroll-snap-align: center;
+      scroll-snap-stop: always;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.4s ease;
+    }
+    .page.season-spring { background: var(--spring-bg); }
+    .page.season-summer { background: var(--summer-bg); }
+    .page.season-autumn { background: var(--autumn-bg); }
+    .page.season-winter { background: var(--winter-bg); }
+    .page.season-cover, .page.season-end { background: #1a1614; color: #f0e6d8; }
+
+    /* 装饰背景圆 */
+    .bg-circle {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0.06;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .bg-circle.c1 { width: 60vmin; height: 60vmin; top: -20%; right: -15%; background: radial-gradient(circle, currentColor 0%, transparent 70%); }
+    .bg-circle.c2 { width: 40vmin; height: 40vmin; bottom: -10%; left: -10%; background: radial-gradient(circle, currentColor 0%, transparent 70%); }
+    .bg-circle.c3 { width: 25vmin; height: 25vmin; top: 55%; right: 10%; background: radial-gradient(circle, currentColor 0%, transparent 70%); opacity: 0.04; }
+    .season-spring .bg-circle { color: #c97a6a; }
+    .season-summer .bg-circle { color: #5a9a68; }
+    .season-autumn .bg-circle { color: #c8943e; }
+    .season-winter .bg-circle { color: #6a8faa; }
+    .season-cover .bg-circle, .season-end .bg-circle { color: #c9a96e; opacity: 0.08; }
+
+    /* 封面页 */
+    .cover-content, .end-content {
+      z-index: 1;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 20px;
+    }
+    .cover-icon { font-size: 12vmin; animation: floatSlow 4s ease-in-out infinite; filter: drop-shadow(0 8px 24px rgba(200,160,100,0.5)); }
+    .cover-title { font-size: clamp(2rem, 6vmin, 3.2rem); font-weight: 700; letter-spacing: 0.15em; color: #f0e6d8; text-shadow: 0 2px 12px rgba(180,140,80,0.5); font-family: 'STKaiti','KaiTi',serif; }
+    .cover-subtitle { font-size: clamp(0.9rem, 2.5vmin, 1.3rem); color: #b8a68e; letter-spacing: 0.2em; }
+    .cover-hint { margin-top: 20px; font-size: 0.85rem; color: #8a7a65; animation: pulse 2s ease-in-out infinite; }
+    .cover-dots { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; justify-content: center; max-width: 80vw; }
+    .cover-dot { width: 7px; height: 7px; border-radius: 50%; background: #5a4a35; transition: all 0.3s; }
+    .cover-dot.highlight { background: #c9a96e; box-shadow: 0 0 8px rgba(200,160,100,0.6); }
+    @keyframes floatSlow { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-14px); } }
+    @keyframes pulse { 0%,100%{ opacity:0.5; } 50%{ opacity:1; } }
+
+    /* 结尾页 */
+    .end-icon { font-size: 10vmin; animation: floatSlow 4s ease-in-out infinite; }
+    .end-title { font-size: clamp(1.5rem, 4vmin, 2.2rem); color: #f0e6d8; letter-spacing: 0.12em; font-family: 'STKaiti','KaiTi',serif; }
+    .end-text { font-size: 0.9rem; color: #a09080; letter-spacing: 0.06em; line-height: 1.8; max-width: 320px; }
+    .end-btn {
+      margin-top: 15px; padding: 12px 32px; border-radius: 30px; border: 1px solid rgba(200,160,100,0.6);
+      background: rgba(200,160,100,0.15); color: #d4b896; font-size: 0.95rem; letter-spacing: 0.1em;
+      cursor: pointer; transition: all 0.3s; font-family: inherit;
+    }
+    .end-btn:active { background: rgba(200,160,100,0.25); }
+
+    /* 内容滚动容器（纵轴） */
+    .page-scroll {
+      width: 100%;
+      height: 100%;
+      overflow-y: auto;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 10px;
+      z-index: 1;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    .page-scroll::-webkit-scrollbar { display: none; }
+
+    /* 季节标题 */
+    .season-header {
+      text-align: center;
+      margin-bottom: 20px;
+      animation: floatSlow 3.5s ease-in-out infinite;
+    }
+    .season-emoji { font-size: 8vmin; }
+    .season-name { font-size: clamp(1.8rem, 5vmin, 2.5rem); font-weight: 700; letter-spacing: 0.2em; font-family: 'STKaiti','KaiTi',serif; }
+    .season-subtitle { font-size: 0.9rem; opacity: 0.65; letter-spacing: 0.1em; margin-top: 4px; }
+    .season-spring .season-name { color: var(--spring-text); }
+    .season-summer .season-name { color: var(--summer-text); }
+    .season-autumn .season-name { color: var(--autumn-text); }
+    .season-winter .season-name { color: var(--winter-text); }
+
+    /* 节气卡片列表 */
+    .cards-container {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      width: 100%;
+      max-width: 400px;
+      padding-bottom: 30px;
+    }
+    .solar-card {
+      background: rgba(255,255,255,0.65);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 16px 18px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.05), 0 2px 6px rgba(0,0,0,0.03);
+      border: 1px solid rgba(0,0,0,0.06);
+      cursor: pointer;
+      transition: all 0.25s ease;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      position: relative;
+    }
+    .solar-card:active { transform: scale(0.98); background: rgba(255,255,255,0.8); }
+    .season-spring .solar-card { background: var(--spring-card); border-color: var(--spring-border); }
+    .season-summer .solar-card { background: var(--summer-card); border-color: var(--summer-border); }
+    .season-autumn .solar-card { background: var(--autumn-card); border-color: var(--autumn-border); }
+    .season-winter .solar-card { background: var(--winter-card); border-color: var(--winter-border); }
+    .card-left {
+      font-size: 2.4rem;
+      width: 50px; height: 50px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.03);
+      border-radius: 16px;
+      flex-shrink: 0;
+    }
+    .card-info { flex: 1; }
+    .card-info h3 {
+      font-size: 1.2rem; font-weight: 700; letter-spacing: 0.06em;
+      margin-bottom: 2px;
+      font-family: 'STKaiti','KaiTi',serif;
+    }
+    .season-spring .card-info h3 { color: var(--spring-text); }
+    .season-summer .card-info h3 { color: var(--summer-text); }
+    .season-autumn .card-info h3 { color: var(--autumn-text); }
+    .season-winter .card-info h3 { color: var(--winter-text); }
+    .card-date { font-size: 0.8rem; opacity: 0.55; letter-spacing: 0.05em; }
+    .card-desc { font-size: 0.82rem; opacity: 0.7; line-height: 1.5; margin-top: 4px; }
+    .card-tap-hint { font-size: 0.7rem; opacity: 0.4; position: absolute; right: 12px; bottom: 8px; }
+
+    /* 详情弹窗 */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .modal-card {
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 24px;
+      padding: 24px 20px;
+      width: 85vw;
+      max-width: 400px;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+      text-align: center;
+      position: relative;
+      border: 1px solid rgba(255,255,255,0.4);
+    }
+    .modal-card h2 { font-family: 'STKaiti','KaiTi',serif; font-size: 1.8rem; letter-spacing: 0.12em; margin-bottom: 6px; }
+    .modal-icon { font-size: 3rem; margin-bottom: 8px; }
+    .modal-date { font-size: 0.9rem; opacity: 0.6; margin-bottom: 12px; }
+    .modal-desc { font-size: 0.9rem; line-height: 1.7; opacity: 0.8; margin-bottom: 12px; text-align: left; }
+    .modal-custom { font-size: 0.85rem; opacity: 0.7; margin-bottom: 10px; text-align: left; background: rgba(0,0,0,0.02); padding: 10px 14px; border-radius: 12px; }
+    .modal-poem { font-size: 0.85rem; font-style: italic; opacity: 0.6; text-align: left; border-left: 3px solid rgba(0,0,0,0.1); padding-left: 12px; margin-bottom: 16px; }
+    .close-btn {
+      margin-top: 10px;
+      padding: 10px 30px;
+      border-radius: 30px;
+      border: 1px solid rgba(0,0,0,0.2);
+      background: rgba(0,0,0,0.03);
+      font-size: 0.9rem;
+      cursor: pointer;
+      letter-spacing: 0.08em;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .close-btn:active { background: rgba(0,0,0,0.08); }
+
+    /* 顶部指示器 */
+    .top-indicator {
+      position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+      z-index: 100; background: rgba(0,0,0,0.5); backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px); color: #fff; padding: 6px 16px;
+      border-radius: 20px; font-size: 0.75rem; letter-spacing: 0.08em;
+      pointer-events: none; white-space: nowrap; transition: all 0.3s;
+      font-family: 'PingFang SC','Hiragino Sans GB',sans-serif;
+    }
+    .top-indicator.light-bg { background: rgba(0,0,0,0.35); }
+    .top-indicator.dark-bg { background: rgba(255,255,255,0.7); color: #3c3228; }
+
+    /* 底部导航 */
+    .bottom-nav {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      z-index: 100; display: flex; gap: 4px; align-items: center;
+      background: rgba(0,0,0,0.45); backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px); padding: 6px 10px; border-radius: 18px;
+      transition: all 0.3s;
+    }
+    .bottom-nav.light-bg { background: rgba(0,0,0,0.3); }
+    .bottom-nav.dark-bg { background: rgba(255,255,255,0.6); }
+    .nav-dot {
+      width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.4);
+      transition: all 0.35s; cursor: pointer; flex-shrink: 0;
+    }
+    .nav-dot.active { background: #fff; width: 16px; border-radius: 4px; box-shadow: 0 0 8px rgba(255,255,255,0.6); }
+    .bottom-nav.dark-bg .nav-dot { background: rgba(60,40,20,0.35); }
+    .bottom-nav.dark-bg .nav-dot.active { background: #3c3228; box-shadow: 0 0 8px rgba(60,40,20,0.4); }
+    .nav-text { font-size: 0.65rem; color: rgba(255,255,255,0.7); margin: 0 2px; white-space: nowrap; letter-spacing: 0.05em; }
+    .bottom-nav.dark-bg .nav-text { color: rgba(40,25,15,0.7); }
+
+    @media (max-width: 480px) {
+      .solar-card { padding: 12px 14px; gap: 10px; }
+      .card-left { font-size: 2rem; width: 42px; height: 42px; }
+      .modal-card { width: 90vw; padding: 20px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="top-indicator dark-bg" id="topIndicator">二十四节气</div>
+  <div class="bottom-nav dark-bg" id="bottomNav"></div>
+  <div class="scroll-container" id="scrollContainer"></div>
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-card" id="modalCard"></div>
+  </div>
+
+  <script>
+    (function() {
+      // ---------- 节气数据 ----------
+      const allTerms = [
+        { name:'立春',number:'01',date:'2月3-5日',icon:'🌱',season:'spring',
+          desc:'东风解冻，蛰虫始振，鱼陟负冰。春季开始，万物复苏。',
+          custom:'迎春、咬春（吃春饼）、打春牛。',
+          poem:'律回岁晚冰霜少，春到人间草木知。' },
+        { name:'雨水',number:'02',date:'2月18-20日',icon:'🌧️',season:'spring',
+          desc:'东风既解，散而为雨。降雨增多，草木萌动。',
+          custom:'回娘家、拉保保、接寿。',
+          poem:'好雨知时节，当春乃发生。' },
+        { name:'惊蛰',number:'03',date:'3月5-7日',icon:'⚡',season:'spring',
+          desc:'春雷乍动，惊醒蛰虫。桃花红，李花白。',
+          custom:'祭白虎、打小人、吃梨。',
+          poem:'微雨众卉新，一雷惊蛰始。' },
+        { name:'春分',number:'04',date:'3月20-22日',icon:'☀️',season:'spring',
+          desc:'昼夜均，寒暑平。春色平分，暖意融融。',
+          custom:'竖蛋、吃春菜、放风筝。',
+          poem:'春分雨脚落声微，柳岸斜风带客归。' },
+        { name:'清明',number:'05',date:'4月4-6日',icon:'🌿',season:'spring',
+          desc:'气清景明，万物皆显。既是节气又是节日。',
+          custom:'扫墓祭祖、踏青、吃青团。',
+          poem:'清明时节雨纷纷，路上行人欲断魂。' },
+        { name:'谷雨',number:'06',date:'4月19-21日',icon:'🌾',season:'spring',
+          desc:'雨生百谷，秧苗初插。春季最后节气。',
+          custom:'喝谷雨茶、赏牡丹、食香椿。',
+          poem:'正好清明连谷雨，一杯香茗坐其间。' },
+        { name:'立夏',number:'07',date:'5月5-7日',icon:'🌻',season:'summer',
+          desc:'斗指东南，维为立夏。万物生长茂盛。',
+          custom:'迎夏、尝新、斗蛋、称人。',
+          poem:'绿树阴浓夏日长，楼台倒影入池塘。' },
+        { name:'小满',number:'08',date:'5月20-22日',icon:'🌾',season:'summer',
+          desc:'物致于此小得盈满。麦类灌浆饱满。',
+          custom:'祭车神、祈蚕神、食苦菜。',
+          poem:'小满田塍寻草药，农闲莫问动三车。' },
+        { name:'芒种',number:'09',date:'6月5-7日',icon:'🌾',season:'summer',
+          desc:'有芒之谷可稼种。忙种时节。',
+          custom:'送花神、安苗、煮梅。',
+          poem:'时雨及芒种，四野皆插秧。' },
+        { name:'夏至',number:'10',date:'6月21-22日',icon:'🔥',season:'summer',
+          desc:'日北至，日长之至。白昼最长。',
+          custom:'祭地、吃夏至面、避暑。',
+          poem:'昼晷已云极，宵漏自此长。' },
+        { name:'小暑',number:'11',date:'7月6-8日',icon:'🌡️',season:'summer',
+          desc:'暑，热也，小暑为小热。',
+          custom:'食新米、晒书画、吃藕。',
+          poem:'倏忽温风至，因循小暑来。' },
+        { name:'大暑',number:'12',date:'7月22-24日',icon:'🥵',season:'summer',
+          desc:'大暑乃炎热之极。最热时期。',
+          custom:'饮伏茶、晒伏姜、吃荔枝。',
+          poem:'赤日几时过，清风无处寻。' },
+        { name:'立秋',number:'13',date:'8月7-9日',icon:'🍁',season:'autumn',
+          desc:'凉风至，白露降，寒蝉鸣。秋季开始。',
+          custom:'贴秋膘、啃秋、晒秋。',
+          poem:'空山新雨后，天气晚来秋。' },
+        { name:'处暑',number:'14',date:'8月22-24日',icon:'🍃',season:'autumn',
+          desc:'处，止也，暑气至此而止。',
+          custom:'祭祖、放河灯、吃鸭子。',
+          poem:'离离暑云散，袅袅凉风起。' },
+        { name:'白露',number:'15',date:'9月7-9日',icon:'💧',season:'autumn',
+          desc:'阴气渐重，露凝而白。天气转凉。',
+          custom:'收清露、饮白露茶、吃龙眼。',
+          poem:'露从今夜白，月是故乡明。' },
+        { name:'秋分',number:'16',date:'9月22-24日',icon:'🌕',season:'autumn',
+          desc:'昼夜均而寒暑平。秋色平分。',
+          custom:'祭月、吃秋菜、竖蛋。',
+          poem:'自古逢秋悲寂寥，我言秋日胜春朝。' },
+        { name:'寒露',number:'17',date:'10月8-9日',icon:'🥶',season:'autumn',
+          desc:'露气寒冷，将凝结也。深秋已至。',
+          custom:'登高、赏菊花、吃芝麻。',
+          poem:'萧疏桐叶上，月白露初团。' },
+        { name:'霜降',number:'18',date:'10月23-24日',icon:'❄️',season:'autumn',
+          desc:'气肃而凝，露结为霜。秋季最后节气。',
+          custom:'赏红叶、吃柿子、拔萝卜。',
+          poem:'停车坐爱枫林晚，霜叶红于二月花。' },
+        { name:'立冬',number:'19',date:'11月7-8日',icon:'🥟',season:'winter',
+          desc:'水始冰，地始冻。冬季开始。',
+          custom:'吃饺子、补冬、冬泳。',
+          poem:'北风潜入悄无声，未品浓秋已立冬。' },
+        { name:'小雪',number:'20',date:'11月22-23日',icon:'🌨️',season:'winter',
+          desc:'气寒而将雪，地寒未甚。',
+          custom:'腌腊肉、吃糍粑、晒鱼干。',
+          poem:'晚来天欲雪，能饮一杯无？' },
+        { name:'大雪',number:'21',date:'12月6-8日',icon:'❄️',season:'winter',
+          desc:'大者，盛也，至此而雪盛。',
+          custom:'赏雪、滑冰、腌肉。',
+          poem:'忽如一夜春风来，千树万树梨花开。' },
+        { name:'冬至',number:'22',date:'12月21-23日',icon:'🧊',season:'winter',
+          desc:'日南至，日短之至。阳气始生。',
+          custom:'吃饺子/汤圆、祭祖、数九。',
+          poem:'天时人事日相催，冬至阳生春又来。' },
+        { name:'小寒',number:'23',date:'1月5-7日',icon:'🥶',season:'winter',
+          desc:'小寒时处二三九，天寒地冻。',
+          custom:'探梅、冰戏、吃腊八粥。',
+          poem:'小寒连大吕，欢鹊垒新巢。' },
+        { name:'大寒',number:'24',date:'1月20-21日',icon:'🧊',season:'winter',
+          desc:'寒气之逆极，故谓大寒。最冷时期。',
+          custom:'尾牙祭、除尘、备年货。',
+          poem:'大寒雪未消，闭户不能出。' }
+      ];
+
+      // 页面结构 (10页)
+      const pagesData = [
+        { type:'cover', season:'cover' },
+        { type:'season', season:'spring', title:'孟春 · 仲春', emoji:'🌸', terms: allTerms.slice(0,3) },  // 立春雨水惊蛰
+        { type:'season', season:'spring', title:'季春', emoji:'🌿', terms: allTerms.slice(3,6) },        // 春分清明谷雨
+        { type:'season', season:'summer', title:'孟夏 · 仲夏', emoji:'☀️', terms: allTerms.slice(6,9) },   // 立夏小满芒种
+        { type:'season', season:'summer', title:'季夏', emoji:'🔥', terms: allTerms.slice(9,12) },        // 夏至小暑大暑
+        { type:'season', season:'autumn', title:'孟秋 · 仲秋', emoji:'🍂', terms: allTerms.slice(12,15) }, // 立秋处暑白露
+        { type:'season', season:'autumn', title:'季秋', emoji:'🌕', terms: allTerms.slice(15,18) },      // 秋分寒露霜降
+        { type:'season', season:'winter', title:'孟冬 · 仲冬', emoji:'❄️', terms: allTerms.slice(18,21) }, // 立冬小雪大雪
+        { type:'season', season:'winter', title:'季冬', emoji:'🧊', terms: allTerms.slice(21,24) },      // 冬至小寒大寒
+        { type:'end', season:'end' }
+      ];
+
+      const totalPages = pagesData.length; // 10
+      const scrollContainer = document.getElementById('scrollContainer');
+      const topIndicator = document.getElementById('topIndicator');
+      const bottomNav = document.getElementById('bottomNav');
+      const modalOverlay = document.getElementById('modalOverlay');
+      const modalCard = document.getElementById('modalCard');
+
+      // ---------- 构建页面 ----------
+      function buildPages() {
+        pagesData.forEach((data, index) => {
+          const page = document.createElement('div');
+          page.className = `page season-${data.season}`;
+          page.setAttribute('data-index', index);
+          page.innerHTML = buildPageContent(data, index);
+          // 装饰圆
+          if (data.type !== 'cover' && data.type !== 'end') {
+            page.innerHTML += `<div class="bg-circle c1"></div><div class="bg-circle c2"></div><div class="bg-circle c3"></div>`;
+          } else {
+            page.innerHTML += `<div class="bg-circle c1"></div><div class="bg-circle c2"></div>`;
+          }
+          scrollContainer.appendChild(page);
+        });
+      }
+
+      function buildPageContent(data, index) {
+        if (data.type === 'cover') {
+          return `
+            <div class="cover-content">
+              <span class="cover-icon">🌏</span>
+              <h1 class="cover-title">二十四节气</h1>
+              <p class="cover-subtitle">岁时记 · 中国人的时间美学</p>
+              <p class="cover-hint">← 左右滑动浏览 →</p>
+              <div class="cover-dots">
+                ${Array.from({length:24},(_,i)=>`<span class="cover-dot ${i<6?'highlight':''}" style="animation-delay:${i*0.04}s"></span>`).join('')}
+              </div>
+            </div>`;
+        } else if (data.type === 'end') {
+          return `
+            <div class="end-content">
+              <span class="end-icon">🏮</span>
+              <h2 class="end-title">二十四节气</h2>
+              <p class="end-text">始于立春，终于大寒，周而复始。<br>这是中国人独有的时间智慧，<br>是农耕文明的瑰宝。<br><br>2016年，列入联合国非遗名录。</p>
+              <button class="end-btn" onclick="document.getElementById('scrollContainer').scrollTo({left:0,behavior:'smooth'})">🔁 回到首页</button>
+            </div>`;
+        } else if (data.type === 'season') {
+          const termsHtml = data.terms.map(term => `
+            <div class="solar-card" data-term='${JSON.stringify(term).replace(/'/g,"&#39;")}'>
+              <div class="card-left">${term.icon}</div>
+              <div class="card-info">
+                <h3>${term.name} · ${term.number}</h3>
+                <div class="card-date">📅 ${term.date}</div>
+                <div class="card-desc">${term.desc}</div>
+              </div>
+              <span class="card-tap-hint">点击查看 ›</span>
+            </div>
+          `).join('');
+          return `
+            <div class="page-scroll">
+              <div class="season-header">
+                <div class="season-emoji">${data.emoji}</div>
+                <div class="season-name">${data.title}</div>
+                <div class="season-subtitle">${data.season==='spring'?'万物复苏':data.season==='summer'?'热烈生长':data.season==='autumn'?'金风送爽':'万物收藏'}</div>
+              </div>
+              <div class="cards-container">${termsHtml}</div>
+            </div>`;
+        }
+        return '';
+      }
+
+      // ---------- 底部导航 ----------
+      function buildBottomNav() {
+        bottomNav.innerHTML = '';
+        for (let i = 0; i < totalPages; i++) {
+          const dot = document.createElement('span');
+          dot.className = 'nav-dot';
+          dot.dataset.index = i;
+          dot.addEventListener('click', (e) => {
+            e.stopPropagation();
+            scrollToPage(i);
+          });
+          bottomNav.appendChild(dot);
+        }
+        // 添加文字标签
+        const textSpan = document.createElement('span');
+        textSpan.className = 'nav-text';
+        textSpan.textContent = '1/10';
+        bottomNav.appendChild(textSpan);
+      }
+
+      function scrollToPage(index) {
+        const page = scrollContainer.querySelector(`.page[data-index="${index}"]`);
+        if (page) {
+          page.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+      }
+
+      // ---------- 当前页检测 ----------
+      let currentPageIndex = 0;
+      let scrollTimeout;
+      function updateCurrentPage() {
+        const containerWidth = scrollContainer.clientWidth;
+        const scrollLeft = scrollContainer.scrollLeft;
+        const centerX = scrollLeft + containerWidth / 2;
+        let closestIndex = 0, closestDistance = Infinity;
+        const pages = scrollContainer.querySelectorAll('.page');
+        pages.forEach(page => {
+          const rect = page.getBoundingClientRect();
+          const containerRect = scrollContainer.getBoundingClientRect();
+          const pageCenterX = rect.left - containerRect.left + rect.width / 2;
+          const dist = Math.abs(pageCenterX - containerWidth / 2);
+          if (dist < closestDistance) { closestDistance = dist; closestIndex = parseInt(page.getAttribute('data-index')); }
+        });
+        if (closestIndex !== currentPageIndex) {
+          currentPageIndex = closestIndex;
+          updateUI();
+        }
+      }
+
+      function updateUI() {
+        const data = pagesData[currentPageIndex];
+        let indicatorText = '';
+        if (data.type === 'cover') indicatorText = '🏠 二十四节气';
+        else if (data.type === 'end') indicatorText = '🏮 岁时记 · 完结';
+        else indicatorText = `${data.emoji} ${data.title} · ${data.season==='spring'?'春':data.season==='summer'?'夏':data.season==='autumn'?'秋':'冬'}`;
+        topIndicator.textContent = indicatorText;
+
+        const isDarkBg = (data.season === 'cover' || data.season === 'end');
+        topIndicator.classList.toggle('light-bg', isDarkBg);
+        topIndicator.classList.toggle('dark-bg', !isDarkBg);
+        bottomNav.classList.toggle('light-bg', isDarkBg);
+        bottomNav.classList.toggle('dark-bg', !isDarkBg);
+
+        // 更新底部导航点
+        const dots = bottomNav.querySelectorAll('.nav-dot');
+        dots.forEach((dot, idx) => {
+          dot.classList.toggle('active', idx === currentPageIndex);
+        });
+        const textSpan = bottomNav.querySelector('.nav-text');
+        if (textSpan) textSpan.textContent = `${currentPageIndex+1}/${totalPages}`;
+      }
+
+      // ---------- 弹窗逻辑 ----------
+      function openModal(term) {
+        const seasonClass = `season-${term.season}`;
+        modalCard.innerHTML = `
+          <div class="modal-icon">${term.icon}</div>
+          <h2>${term.name} · 第${term.number}个节气</h2>
+          <div class="modal-date">📅 ${term.date}</div>
+          <div class="modal-desc">${term.desc}</div>
+          <div class="modal-custom">🎐 习俗：${term.custom}</div>
+          <div class="modal-poem">📜 ${term.poem}</div>
+          <button class="close-btn">关闭</button>
+        `;
+        modalCard.querySelector('.close-btn').addEventListener('click', closeModal);
+        modalOverlay.classList.add('active');
+      }
+
+      function closeModal() {
+        modalOverlay.classList.remove('active');
+      }
+
+      modalOverlay.addEventListener('click', function(e) {
+        if (e.target === modalOverlay) closeModal();
+      });
+
+      // 卡片点击委托
+      scrollContainer.addEventListener('click', function(e) {
+        const card = e.target.closest('.solar-card');
+        if (!card) return;
+        const termData = card.dataset.term;
+        if (termData) {
+          try {
+            const term = JSON.parse(termData);
+            openModal(term);
+          } catch (err) {}
+        }
+      });
+
+      // ---------- 滑动事件 ----------
+      let isDragging = false;
+      scrollContainer.addEventListener('scroll', () => {
+        if (!isDragging) {
+          clearTimeout(scrollTimeout);
+          scrollTimeout = setTimeout(updateCurrentPage, 80);
+        }
+      });
+      scrollContainer.addEventListener('pointerdown', (e) => {
+        isDragging = true;
+        scrollContainer.classList.add('dragging');
+      });
+      scrollContainer.addEventListener('pointerup', () => {
+        isDragging = false;
+        scrollContainer.classList.remove('dragging');
+        setTimeout(updateCurrentPage, 150);
+      });
+      scrollContainer.addEventListener('pointerleave', () => {
+        if (isDragging) { isDragging = false; scrollContainer.classList.remove('dragging'); }
+      });
+
+      // 键盘导航
+      document.addEventListener('keydown', (e) => {
+        if (modalOverlay.classList.contains('active')) return;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          scrollToPage(Math.min(currentPageIndex+1, totalPages-1));
+        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          scrollToPage(Math.max(currentPageIndex-1, 0));
+        }
+      });
+
+      // 初始化
+      buildPages();
+      buildBottomNav();
+      updateCurrentPage();
+      updateUI();
+      setTimeout(updateCurrentPage, 300);
+      window.addEventListener('resize', () => setTimeout(updateCurrentPage, 200));
+      console.log('🌸 二十四节气 H5 已启动 (10页交互版)');
+    })();
+  </script>
+</body>
+</html>
